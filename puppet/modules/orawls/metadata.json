@@ -1,0 +1,84 @@
+{
+  "operatingsystem_support": [
+    {
+      "operatingsystem": "RedHat",
+      "operatingsystemrelease": [
+        "5",
+        "6"
+      ]
+    },
+    {
+      "operatingsystem": "CentOS",
+      "operatingsystemrelease": [
+        "5",
+        "6"
+      ]
+    },
+    {
+      "operatingsystem": "OracleLinux",
+      "operatingsystemrelease": [
+        "5",
+        "6"
+      ]
+    },
+    {
+      "operatingsystem": "Scientific",
+      "operatingsystemrelease": [
+        "5",
+        "6"
+      ]
+    },
+    {
+      "operatingsystem": "SLES",
+      "operatingsystemrelease": [
+        "11 SP1"
+      ]
+    },
+    {
+      "operatingsystem": "Debian",
+      "operatingsystemrelease": [
+        "6",
+        "7"
+      ]
+    },
+    {
+      "operatingsystem": "Ubuntu",
+      "operatingsystemrelease": [
+        "10.04",
+        "12.04"
+      ]
+    },
+    {
+      "operatingsystem": "Solaris",
+      "operatingsystemrelease": [
+        "10",
+        "11"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "name": "pe",
+      "version_requirement": "3.x"
+    },
+    {
+      "name": "puppet",
+      "version_requirement": "3.x"
+    }
+  ],
+  "name": "biemond-orawls",
+  "version": "1.0.1",
+  "summary": "Oracle WebLogic puppet module v2, wls type/provider, optimized for Hiera ( Puppet 3.X ) and for Linux,Solaris",
+  "author": "Edwin Biemond",
+  "description": "Only for Linux & Solaris \nOracle WebLogic module optimized for Hiera and Puppet 3\nwls native types & providers like wls_machine, wls_server and wls_cluster\n\nbased on the wls module",
+  "dependencies": [
+    {"name":"hajee/easy_type","version_requirement":">=0.7.4"},
+    {"name":"adrien/filemapper","version_requirement":">=1.1.1"},
+    {"name":"reidmv/yamlfile","version_requirement":">=0.2.0"}
+  ],
+  "types": [],
+  "checksums": {},
+  "source": "https://github.com/biemond/biemond-orawls",
+  "project_page": "",
+  "license": "Apache 2.0"
+}

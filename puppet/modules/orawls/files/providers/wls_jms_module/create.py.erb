@@ -1,0 +1,35 @@
+weblogicUser         = sys.argv[1] 
+weblogicPassword     = sys.argv[2] 
+weblogicConnectUrl   = sys.argv[3] 
+
+# check the domain else we need to skip this (done in wls_access.rb)
+real_domain='<%= domain %>'
+
+connect(weblogicUser,weblogicPassword,weblogicConnectUrl)
+
+name          = '<%= jms_module_name %>'
+target        = '<%= target %>'
+targetType    = '<%= targettype %>'
+
+edit()
+startEdit()
+
+try:
+
+    cd('/')
+    cmo.createJMSSystemResource(name)
+    cd('/SystemResources/'+name)
+    set('Targets', jarray.array([ObjectName('com.bea:Name='+target+',Type='+targetType)], ObjectName))
+
+    save()
+    activate()          
+
+except:
+    print "Unexpected error:", sys.exc_info()[0]
+    undo('true','y')
+    stopEdit('y')
+    raise
+
+disconnect()
+exit()
+

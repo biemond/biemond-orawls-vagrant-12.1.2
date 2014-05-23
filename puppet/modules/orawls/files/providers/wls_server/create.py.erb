@@ -1,0 +1,114 @@
+weblogicUser         = sys.argv[1] 
+weblogicPassword     = sys.argv[2] 
+weblogicConnectUrl   = sys.argv[3] 
+
+# check the domain else we need to skip this (done in wls_access.rb)
+real_domain='<%= domain %>'
+
+connect(weblogicUser,weblogicPassword,weblogicConnectUrl)
+
+name          = '<%= server_name %>'
+classpath     = '<%= classpath %>'
+arguments     = '<%= arguments %>'
+machineName   = '<%= machine %>'
+logFilename   = '<%= logfilename %>'
+listenAddress = '<%= listenaddress %>'
+listenPort    = <%= listenport %>
+sslEnabled    = <%= sslenabled %>
+sslHostnameVerificationIgnored = <%= sslhostnameverificationignored %>
+sslListenPort = <%= ssllistenport %>
+jsseenabled   = <%= jsseenabled %>
+
+jsseenabled   = <%= jsseenabled %>
+
+custom_identity                        = '<%= custom_identity %>'
+custom_identity_keystore_filename      = '<%= custom_identity_keystore_filename %>'
+custom_identity_keystore_passphrase    = '<%= custom_identity_keystore_passphrase %>'
+custom_identity_alias                  = '<%= custom_identity_alias %>'
+custom_identity_privatekey_passphrase  = '<%= custom_identity_privatekey_passphrase %>'
+trust_keystore_file                    = '<%= trust_keystore_file %>'
+trust_keystore_passphrase              = '<%= trust_keystore_passphrase %>'
+
+edit()
+startEdit()
+
+# create with java a boot.properties file
+def createBootPropertiesFile(directoryPath,fileName, username, password):
+  serverDir = File(directoryPath)
+  bool = serverDir.mkdirs()
+  fileNew=open(directoryPath + '/'+fileName, 'w')
+  fileNew.write('username=%s\n' % username)
+  fileNew.write('password=%s\n' % password)
+  fileNew.flush()
+  fileNew.close()
+
+def formatBoolean(value):
+    if value == 1:
+        return 'True'
+    else:
+        return 'False'    
+
+
+try:
+
+    cd('/')
+    cmo.createServer(name)
+  
+    cd('/Servers/'+name)
+    set('Machine',getMBean('/Machines/'+machineName))
+    
+    if listenAddress:
+        set('ListenAddress',listenAddress)
+
+    set('ListenPort', listenPort)
+
+    if classpath:    
+        set('ServerStart/'+name+'/ClassPath', classpath)
+
+    if arguments:    
+        set('ServerStart/'+name+'/Arguments', arguments)
+
+    if custom_identity == '1':
+      set('KeyStores'                                ,'CustomIdentityAndCustomTrust')
+      set('CustomIdentityKeyStoreFileName'           ,custom_identity_keystore_filename)
+      set('CustomIdentityKeyStorePassPhrase'         ,custom_identity_keystore_passphrase)
+      set('CustomTrustKeyStoreFileName'              ,trust_keystore_file)
+      set('CustomTrustKeyStorePassPhrase'            ,trust_keystore_passphrase)
+      cd('SSL/'+name)
+      set('ServerPrivateKeyAlias'                    ,custom_identity_alias)
+      set('ServerPrivateKeyPassPhrase'               ,custom_identity_privatekey_passphrase)
+    else:
+      set('KeyStores'                                ,'DemoIdentityAndDemoTrust')
+    
+    cd('/Servers/'+name+'/SSL/'+name)
+
+    set('Enabled', formatBoolean(sslEnabled))
+    
+    set('JSSEEnabled', formatBoolean(jsseenabled))
+    
+    set('HostnameVerificationIgnored', formatBoolean(sslHostnameVerificationIgnored))
+
+    set('ListenPort', sslListenPort)
+    
+    if logFilename:
+        cd('/Servers/'+name+'/Log/'+name)
+        set('FileName', logFilename)
+
+    save()
+    activate()          
+
+    cd('/')
+    DOMAIN_PATH = get('RootDirectory')
+
+    createBootPropertiesFile(DOMAIN_PATH+'/servers/'+name+'/security','boot.properties',weblogicUser,weblogicPassword)
+
+
+except:
+    print "Unexpected error:", sys.exc_info()[0]
+    undo('true','y')
+    stopEdit('y')
+    raise
+
+disconnect()
+exit()
+

@@ -4,8 +4,8 @@
 #
 define orawls::nodemanager (
   $version                               = hiera('wls_version'                   , 1111),  # 1036|1111|1211|1212
-  $middleware_home_dir                   = hiera('wls_middleware_home_dir'       , undef), # /opt/oracle/middleware11gR1
-  $weblogic_home_dir                     = hiera('wls_weblogic_home_dir'         , undef),
+  $middleware_home_dir                   = hiera('wls_middleware_home_dir'), # /opt/oracle/middleware11gR1
+  $weblogic_home_dir                     = hiera('wls_weblogic_home_dir'),
   $nodemanager_port                      = hiera('domain_nodemanager_port'       , 5556),
   $nodemanager_address                   = undef,
   $jsse_enabled                          = hiera('wls_jsse_enabled'              , false),
@@ -19,10 +19,10 @@ define orawls::nodemanager (
   $custom_identity_privatekey_passphrase = undef,
   $wls_domains_dir                       = hiera('wls_domains_dir'               , undef),
   $domain_name                           = hiera('domain_name'                   , undef),
-  $jdk_home_dir                          = hiera('wls_jdk_home_dir'              , undef), # /usr/java/jdk1.7.0_45
-  $os_user                               = hiera('wls_os_user'                   , undef), # oracle
-  $os_group                              = hiera('wls_os_group'                  , undef), # dba
-  $download_dir                          = hiera('wls_download_dir'              , undef), # /data/install
+  $jdk_home_dir                          = hiera('wls_jdk_home_dir'), # /usr/java/jdk1.7.0_45
+  $os_user                               = hiera('wls_os_user'), # oracle
+  $os_group                              = hiera('wls_os_group'), # dba
+  $download_dir                          = hiera('wls_download_dir'), # /data/install
   $log_dir                               = hiera('wls_log_dir'                   , undef), # /data/logs
   $log_output                            = false, # true|false
 )
@@ -37,7 +37,7 @@ define orawls::nodemanager (
   if ( $version == 1111 or $version == 1036 or $version == 1211 ) {
     $nodeMgrHome = "${weblogic_home_dir}/common/nodemanager"
     $startHome   = "${weblogic_home_dir}/server/bin"
-  } elsif $version == 1212 {
+  } elsif $version == 1212 or $version == 1213 {
     $nodeMgrHome = "${domains_dir}/${domain_name}/nodemanager"
     $startHome   = "${domains_dir}/${domain_name}/bin"
   } else {
@@ -95,13 +95,19 @@ define orawls::nodemanager (
   Exec {
     logoutput => $log_output,
   }
+  
+  if $custom_identity == true {
+    $replaceNodemanagerProperties = false
+  } else {
+    $replaceNodemanagerProperties = true
+  }
 
   # nodemanager is part of the domain creation
   if ( $version == 1111 or $version == 1036 or $version == 1211 ){
     file { "nodemanager.properties ux ${title}":
       ensure  => present,
       path    => "${nodeMgrHome}/nodemanager.properties",
-      replace => true,
+      replace => $replaceNodemanagerProperties,
       content => template("orawls/nodemgr/nodemanager.properties.erb"),
       owner   => $os_user,
       group   => $os_group,

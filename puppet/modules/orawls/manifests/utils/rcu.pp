@@ -1,13 +1,13 @@
 # == Class: orawls::utils::rcu
-#    rcu for adf 12.1.2
+#    rcu for adf 12.1.2 & 12.1.3
 #
 define orawls::utils::rcu(  
-  $fmw_product                 = 'adf',
+  $fmw_product                 = 'adf', # adf|soa
   $oracle_fmw_product_home_dir = undef,
-  $jdk_home_dir                = hiera('wls_jdk_home_dir' , undef),
-  $os_user                     = hiera('wls_os_user'      , undef), # oracle
-  $os_group                    = hiera('wls_os_group'     , undef), # dba
-  $download_dir                = hiera('wls_download_dir' , undef), # /data/install
+  $jdk_home_dir                = hiera('wls_jdk_home_dir'),
+  $os_user                     = hiera('wls_os_user'),      # oracle
+  $os_group                    = hiera('wls_os_group'),     # dba
+  $download_dir                = hiera('wls_download_dir'), # /data/install
   $rcu_action                  = 'create',
   $rcu_database_url            = undef,   #192.168.50.5:1521:XE
   $rcu_prefix                  = undef,
@@ -28,6 +28,10 @@ define orawls::utils::rcu(
   if $fmw_product == 'adf' {
     $components = '-component MDS -component IAU -component IAU_APPEND -component IAU_VIEWER -component OPSS -component WLS -component UCSCC  '
     $componentsPasswords = [$rcu_password, $rcu_password, $rcu_password,$rcu_password,$rcu_password,$rcu_password,$rcu_password]
+  }
+  elsif $fmw_product == 'soa' {
+    $components = '-component MDS -component IAU -component IAU_APPEND -component IAU_VIEWER -component OPSS -component WLS -component UCSCC -component UCSUMS -component UMS -component ESS -component SOAINFRA -component MFT '
+    $componentsPasswords = [$rcu_password, $rcu_password, $rcu_password,$rcu_password,$rcu_password,$rcu_password,$rcu_password,$rcu_password,$rcu_password,$rcu_password,$rcu_password,$rcu_password]
   } else {
     fail("Unrecognized FMW fmw_product")
   }
@@ -47,6 +51,17 @@ define orawls::utils::rcu(
   elsif $rcu_action == 'delete' {
     $action = "-dropRepository"
   }
+
+  # wls_rcu{ $schemaPrefix:
+  #   ensure                  => $rcu_action,
+  #   statement               => "${oracle_fmw_product_home_dir}/bin/rcu -silent ${action} -databaseType ORACLE -connectString ${rcu_database_url} -dbUser SYS -dbRole SYSDBA -schemaPrefix ${rcu_prefix} ${components} -f < ${download_dir}/rcu_passwords_${fmw_product}_${rcu_action}.txt",  
+  #   os_user                 => $os_user,
+  #   oracle_home             => $oracleHome,
+  #   sys_password            => $sysPassword,
+  #   db_server               => $dbServer,
+  #   db_service              => $dbService,
+  #   require                 => File["${download_dir}/rcu_passwords_${fmw_product}_${rcu_action}.txt"],
+  # }
 
   exec { "install rcu repos ${title}":
     command     => "${oracle_fmw_product_home_dir}/bin/rcu -silent ${action} -databaseType ORACLE -connectString ${rcu_database_url} -dbUser SYS -dbRole SYSDBA -schemaPrefix ${rcu_prefix} ${components} -f < ${download_dir}/rcu_passwords_${fmw_product}_${rcu_action}.txt",

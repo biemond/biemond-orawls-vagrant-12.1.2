@@ -114,6 +114,49 @@ module EasyType
         @groups ||= EasyType::Group.new
         @groups
       end
+
+
+      #
+      # easy way to map parts of a title to one of the attributes and properties. 
+      #
+      # @example
+      # map_title_to_attributes([:name,:domain, :jmsmodule, :queue_name]) do
+      #  /^((.*\/)?(.*):(.*)?)$/) 
+      # end
+      #
+      # @param [Array] an array containing the symbols idetifying the parameters an properties to use
+      # @yield yields regexp the regular expression to map parts of the title.
+      #
+      # You can also pass a Hash as one of the entries in the array. The key mus be the field to map to
+      # and the value mus be a closure (Proc or a Lambda) to manage the value
+      #
+      # @example
+      # default_name = lambda {| name| name.nil? ? 'default' : name}
+      # map_title_to_attributes([:name -> default_name,:domain, :jmsmodule, :queue_name]) do
+      #  /^((.*\/)?(.*):(.*)?)$/) 
+      # end
+      #
+      def map_title_to_attributes(*attributes)
+        attribute_array = attributes.map  do | attr| 
+          case attr
+          when Array  then attr
+          when Symbol then [attr, nil]
+          when String then [attr.to_sym, nil]
+          when Hash   then attr.to_a.flatten
+          else fail "map_title_to_attribute, doesn\'t support #{attr.class} as attribute"
+          end
+        end
+        regexp = yield
+        eigenclass.send(:define_method,:title_patterns) do 
+          [
+            [
+              regexp,
+              attribute_array
+            ]
+          ]
+        end
+      end
+
       #
       # include's the parameter declaration. It searches for the parameter file in the directory
       # `puppet/type/type_name/parameter_name, or in the shared directory `puppet/type/shared`
@@ -179,11 +222,31 @@ module EasyType
 
       # @private
       def define_os_command_method(method_or_command)
-        eigenclass = class << self; self; end
         eigenclass.send(:define_method, method_or_command) do | *args|
           command = args.dup.unshift(method_or_command)
           Puppet::Util::Execution.execute(command)
         end
+      end
+
+      #
+      # retuns the string needed to start the creation of an sql type
+      #
+      # @example
+      #  newtype(:oracle_user) do
+      #
+      #    on_refresh do
+      #      # restart the server
+      #    end
+      #
+      # @param [Method] block The code to be run on getting a notification
+      #
+      def on_notify(&block)
+        define_method(:refresh, &block) if block
+      end
+
+      # @private
+      def eigenclass
+        class << self; self; end
       end
 
       #
@@ -254,7 +317,6 @@ module EasyType
       # @param [Method] block The code to be run to fetch the raw resource information from the system.
       #
       def to_get_raw_resources(&block)
-        eigenclass = class << self; self; end
         eigenclass.send(:define_method, :get_raw_resources, &block)
       end
     end

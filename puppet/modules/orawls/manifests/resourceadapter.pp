@@ -1,9 +1,9 @@
 #
 #
 define orawls::resourceadapter( 
-  $middleware_home_dir       = hiera('wls_middleware_home_dir'   , undef), # /opt/oracle/middleware11gR1
-  $weblogic_home_dir         = hiera('wls_weblogic_home_dir'     , undef),
-  $jdk_home_dir              = hiera('wls_jdk_home_dir'          , undef), # /usr/java/jdk1.7.0_45
+  $middleware_home_dir       = hiera('wls_middleware_home_dir'), # /opt/oracle/middleware11gR1
+  $weblogic_home_dir         = hiera('wls_weblogic_home_dir'),
+  $jdk_home_dir              = hiera('wls_jdk_home_dir'), # /usr/java/jdk1.7.0_45
   $wls_domains_dir           = hiera('wls_domains_dir'           , undef),
   $domain_name               = hiera('domain_name'               , undef),
   $adapter_name              = undef,
@@ -19,9 +19,9 @@ define orawls::resourceadapter(
   $userKeyFile               = hiera('domain_user_key_file'      , undef),
   $weblogic_user             = hiera('wls_weblogic_user'         , "weblogic"),
   $weblogic_password         = hiera('domain_wls_password'       , undef),
-  $os_user                   = hiera('wls_os_user'               , undef), # oracle
-  $os_group                  = hiera('wls_os_group'              , undef), # dba
-  $download_dir              = hiera('wls_download_dir'          , undef), # /data/install
+  $os_user                   = hiera('wls_os_user'), # oracle
+  $os_group                  = hiera('wls_os_group'), # dba
+  $download_dir              = hiera('wls_download_dir'), # /data/install
   $log_output                = false, # true|false
 ) 
 {
@@ -85,46 +85,52 @@ define orawls::resourceadapter(
     fail("userConfigFile or wlsUser parameter is empty ")
   }
 
-  # lets make the a new plan for this adapter
-  if ( $continuePlan ) {
-
-    # download the plan and put it on the right place
-    if $adapter_name == 'DbAdapter' {
+  # download the plan and put it on the right place
+  if $adapter_name == 'DbAdapter' {
+    if !defined(File["${adapter_plan_dir}/${adapter_plan}"]) {
       file { "${adapter_plan_dir}/${adapter_plan}":
         ensure  => present,
         mode    => '0744',
+        replace => false,
         owner   => $os_user,
         group   => $os_group,
         backup  => false,
         path    => "${adapter_plan_dir}/${adapter_plan}",
         content => template("orawls/adapter_plans/Plan_DB.xml.erb"),
-        before  => Exec["exec deployer adapter plan ${title}"],
       }
-    } elsif $adapter_name == 'JmsAdapter' {
+    }
+  } elsif $adapter_name == 'JmsAdapter' {
+    if !defined(File["${adapter_plan_dir}/${adapter_plan}"]) {
       file { "${adapter_plan_dir}/${adapter_plan}":
         ensure  => present,
         mode    => '0744',
+        replace => false,
         owner   => $os_user,
         group   => $os_group,
         backup  => false,
         path    => "${adapter_plan_dir}/${adapter_plan}",
         content => template("orawls/adapter_plans/Plan_JMS.xml.erb"),
-        before  => Exec["exec deployer adapter plan ${title}"],
       }
-    } elsif $adapter_name == 'AqAdapter' {
+    } 
+  } elsif $adapter_name == 'AqAdapter' {
+    if !defined(File["${adapter_plan_dir}/${adapter_plan}"]) {
       file { "${adapter_plan_dir}/${adapter_plan}":
         ensure  => present,
         mode    => '0744',
+        replace => false,
         owner   => $os_user,
         group   => $os_group,
         backup  => false,
         path    => "${adapter_plan_dir}/${adapter_plan}",
         content => template("orawls/adapter_plans/Plan_AQ.xml.erb"),
-        before  => Exec["exec deployer adapter plan ${title}"],
       }
-    } else {
-      fail("adapter_name ${adapter_name} is unknown, choose for DbAdapter,JmsAdapter or AqAdapter ")
-    }
+    } 
+  } else {
+    fail("adapter_name ${adapter_name} is unknown, choose for DbAdapter,JmsAdapter or AqAdapter ")
+  }
+
+  # lets make the a new plan for this adapter
+  if ( $continuePlan ) {
 
     case $::kernel {
       'Linux': {
@@ -146,6 +152,8 @@ define orawls::resourceadapter(
           user        => $os_user,
           group       => $os_group,
           logoutput   => $log_output,
+          require     => File["${adapter_plan_dir}/${adapter_plan}"],
+          before      => Exec["exec create resource adapter entry ${title}"],
         }
 
       }
@@ -204,6 +212,7 @@ define orawls::resourceadapter(
           user        => $os_user,
           group       => $os_group,
           logoutput   => $log_output,
+          require     => File["${adapter_plan_dir}/${adapter_plan}"],
         }
 
         # deploy the plan and update the adapter
@@ -215,7 +224,7 @@ define orawls::resourceadapter(
           user        => $os_user,
           group       => $os_group,
           logoutput   => $log_output,
-          require     => Exec["exec create resource adapter entry ${title}"],
+          require     => [Exec["exec create resource adapter entry ${title}"],File["${adapter_plan_dir}/${adapter_plan}"],],
         }
 
       }

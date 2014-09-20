@@ -1,0 +1,15 @@
+{
+  "CHANGELOG.md": "8de863ea584683bf24afab1b75aa48e2",
+  "Gemfile": "76d0dbef618c4710acabc53e94fe3e3c",
+  "License": "da7d8b642432b13765207d2c382a6555",
+  "README.md": "8aa4183aa3d114a6ec99d5c2ae1ebfd5",
+  "Rakefile": "1e76dce3e8406d6e664f5b688164cb20",
+  "manifests/init.pp": "eab493365c6e2390dd5662f9f2b04b52",
+  "manifests/install7.pp": "d41c7ecdba79b679798220fe67afbd0f",
+  "manifests/javaexec.pp": "0f7676313afb7aa74e6c7067d58614c5",
+  "manifests/urandomfix.pp": "bbe1716bdad8b13e185cc7093ae10e79",
+  "metadata.json": "993c168e6a492cec98994bcb0d7e30ce",
+  "spec/classes/urandomfix_spec.rb": "a1954c92e79af9e66279e6633c7dd51a",
+  "spec/spec.opts": "a600ded995d948e393fbe2320ba8e51c",
+  "spec/spec_helper.rb": "3ea886dd135e120afa31e0aab12e85b0"
+}

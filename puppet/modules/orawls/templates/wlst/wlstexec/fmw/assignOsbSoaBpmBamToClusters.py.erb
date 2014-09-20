@@ -1,4 +1,3 @@
-
 #http://docs.oracle.com/cd/E28280_01/core.1111/e12036/target_appendix_soa.htm
 
 WLHOME='<%= @weblogic_home_dir %>'
@@ -29,6 +28,8 @@ SoaOimAdmin    = '<%= @oim_cluster_name %>,<%= @soa_cluster_name %>,<%= @adminse
 SoaBamOimAdmin = '<%= @bam_cluster_name %>,<%= @oim_cluster_name %>,<%= @soa_cluster_name %>,<%= @adminserver_name %>'
 SoaOimOamAdmin = '<%= @oam_cluster_name %>,<%= @oim_cluster_name %>,<%= @soa_cluster_name %>,<%= @adminserver_name %>'
 Admin          = '<%= @adminserver_name %>'
+
+ofm_version    = int(<%= @ofm_version %>)
 
 AllArray = []
 AdapterArray = []
@@ -105,7 +106,8 @@ if soaEnabled == true:
     else:
         delete('UMSJMSServer'       , 'JMSServer')
 
-    delete('soa_server1'            , 'Server')
+    if oimEnabled == false:
+        delete('soa_server1'        , 'Server')
 
 if bamEnabled == true:
     delete('BAMJmsSystemResource'   , 'JMSSystemResource')
@@ -136,9 +138,10 @@ assign('AppDeployment', 'OracleAppsAdapter'          , 'Target', Adapters)
 assign('AppDeployment', 'OracleBamAdapter'           , 'Target', Adapters)
 assign('AppDeployment', 'SocketAdapter'              , 'Target', Adapters)
 
-if soaEnabled == true:
+if soaEnabled == true and ofm_version > 1116:
     assign('AppDeployment', 'UMSAdapter' , 'Target', Adapters)
-
+else:
+    print "Warning: UMSAdapter Adapter not deployed. This is expected behaviour for versions of OFM 11.1.1.6 and below."
 
 # apps
 assign('AppDeployment', 'DMS Application#11.1.1.1.0'             , 'Target', All)
@@ -156,7 +159,10 @@ if soaEnabled == true:
 #bpm
 if bpmEnabled == true:
     assign('AppDeployment', 'BPMComposer'                , 'Target', SOAClusterName)
-    assign('AppDeployment', 'frevvo'                     , 'Target', SOAClusterName)
+    if ofm_version > 1116:
+        assign('AppDeployment', 'frevvo'                     , 'Target', SOAClusterName)
+    else:
+        print "Warning: frevvo not deployed. This is expected behaviour for versions of OFM 11.1.1.6 and below."
     assign('AppDeployment', 'OracleBPMComposerRolesApp'  , 'Target', SOAClusterName)
     assign('AppDeployment', 'OracleBPMProcessRolesApp'   , 'Target', SOAClusterName)
     assign('AppDeployment', 'OracleBPMWorkspace'         , 'Target', SOAClusterName)
@@ -260,14 +266,17 @@ else:
 if oimEnabled == true and oamEnabled == true:
     assign('Library', 'oracle.webcenter.composer#11.1.1@11.1.1', 'Target', OimOamAdmin)
     assign('Library', 'oracle.idm.common.model#11.1.1@11.1.1'  , 'Target', OimOamAdmin)
+    assign('Library', 'oracle.idm.ids.config.ui#11.1.2@11.1.2' , 'Target', OimOamAdmin)
     assign('Library', 'oracle.idm.uishell#11.1.1@11.1.1'       , 'Target', OimOamAdmin)
 elif oimEnabled == false and oamEnabled == true:
     assign('Library', 'oracle.webcenter.composer#11.1.1@11.1.1', 'Target', OamAdmin)
     assign('Library', 'oracle.idm.common.model#11.1.1@11.1.1'  , 'Target', OamAdmin)
+    assign('Library', 'oracle.idm.ids.config.ui#11.1.2@11.1.2' , 'Target', OamAdmin)
     assign('Library', 'oracle.idm.uishell#11.1.1@11.1.1'       , 'Target', OamAdmin)
 elif oimEnabled == true and oamEnabled == false:
     assign('Library', 'oracle.webcenter.composer#11.1.1@11.1.1', 'Target', OimAdmin)
     assign('Library', 'oracle.idm.common.model#11.1.1@11.1.1'  , 'Target', OimAdmin)
+    assign('Library', 'oracle.idm.ids.config.ui#11.1.2@11.1.2' , 'Target', OimAdmin)
     assign('Library', 'oracle.idm.uishell#11.1.1@11.1.1'       , 'Target', OimAdmin)
 else:
     assign('Library', 'oracle.webcenter.composer#11.1.1@11.1.1', 'Target', Admin)
@@ -459,7 +468,7 @@ if soaEnabled == true:
     assign('JdbcSystemResource', 'SOALocalTxDataSource', 'Target', SOAClusterName)
 
 if oamEnabled == true:
-    assign('JdbcSystemResource', 'oamDS'               , 'Target', OAMClusterName)
+    assign('JdbcSystemResource', 'oamDS'               , 'Target', OamAdmin)
     
 if oimEnabled == true:
     assign('JdbcSystemResource', 'oimOperationsDB'     , 'Target', OIMClusterName)

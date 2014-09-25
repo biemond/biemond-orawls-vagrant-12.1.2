@@ -5,7 +5,7 @@
 #
 
 node 'admin.example.com' {
-  
+
   include os
   include ssh
   include java, orawls::urandomfix
@@ -43,7 +43,7 @@ node 'admin.example.com' {
   include pack_domain
 
   Class[java] -> Class[orawls::weblogic]
-}  
+}
 
 # operating settings for Middleware
 class os {
@@ -143,7 +143,7 @@ class ssh {
     ensure => "directory",
     alias  => "oracle-ssh-dir",
   }
-  
+
   file { "/home/oracle/.ssh/id_rsa.pub":
     ensure  => present,
     owner   => "oracle",
@@ -152,7 +152,7 @@ class ssh {
     source  => "/vagrant/ssh/id_rsa.pub",
     require => File["oracle-ssh-dir"],
   }
-  
+
   file { "/home/oracle/.ssh/id_rsa":
     ensure  => present,
     owner   => "oracle",
@@ -161,7 +161,7 @@ class ssh {
     source  => "/vagrant/ssh/id_rsa",
     require => File["oracle-ssh-dir"],
   }
-  
+
   file { "/home/oracle/.ssh/authorized_keys":
     ensure  => present,
     owner   => "oracle",
@@ -169,7 +169,7 @@ class ssh {
     mode    => "644",
     source  => "/vagrant/ssh/id_rsa.pub",
     require => File["oracle-ssh-dir"],
-  }        
+  }
 }
 
 class java {
@@ -187,9 +187,9 @@ class java {
   # $LOG_DIR='/tmp/log_puppet_weblogic'
 
   jdk7::install7{ 'jdk1.7.0_51':
-      version                   => "7u51" , 
+      version                   => "7u51" ,
       fullVersion               => "jdk1.7.0_51",
-      alternativesPriority      => 18000, 
+      alternativesPriority      => 18000,
       x64                       => true,
       downloadDir               => "/var/tmp/install",
       urandomJavaFix            => true,
@@ -218,7 +218,7 @@ class java {
 # log all java executions:
 define javaexec_debug() {
   exec { "patch java to log all executions on $title":
-    command => "/bin/mv ${title} ${title}_ && /bin/cp /vagrant/puppet/files/java_debug ${title} && /bin/chmod +x ${title}", 
+    command => "/bin/mv ${title} ${title}_ && /bin/cp /vagrant/puppet/files/java_debug ${title} && /bin/chmod +x ${title}",
     unless  => "/usr/bin/test -f ${title}_",
   }
 }
@@ -264,15 +264,15 @@ class nodemanager {
   $nodemanager_instances = hiera('nodemanager_instances', {})
   create_resources('orawls::nodemanager',$nodemanager_instances, $default_params)
 
-  orautils::nodemanagerautostart{"autostart weblogic 11g":
-    version                 => hiera('wls_version'),
-    wlHome                  => hiera('wls_weblogic_home_dir'),
-    user                    => hiera('wls_os_user'),
-    jsseEnabled             => hiera('wls_jsse_enabled'             ,false),
-    customTrust             => hiera('wls_custom_trust'             ,false),
-    trustKeystoreFile       => hiera('wls_trust_keystore_file'      ,undef),
-    trustKeystorePassphrase => hiera('wls_trust_keystore_passphrase',undef),
-  }
+  # orautils::nodemanagerautostart{"autostart weblogic 11g":
+  #   version                 => hiera('wls_version'),
+  #   wlHome                  => hiera('wls_weblogic_home_dir'),
+  #   user                    => hiera('wls_os_user'),
+  #   jsseEnabled             => hiera('wls_jsse_enabled'             ,false),
+  #   customTrust             => hiera('wls_custom_trust'             ,false),
+  #   trustKeystoreFile       => hiera('wls_trust_keystore_file'      ,undef),
+  #   trustKeystorePassphrase => hiera('wls_trust_keystore_passphrase',undef),
+  # }
 
 }
 
@@ -285,11 +285,11 @@ class startwls {
 }
 
 class userconfig{
-  require orawls::weblogic, domains, nodemanager, startwls 
+  require orawls::weblogic, domains, nodemanager, startwls
   $default_params = {}
   $userconfig_instances = hiera('userconfig_instances', {})
   create_resources('orawls::storeuserconfig',$userconfig_instances, $default_params)
-} 
+}
 
 class users{
   require userconfig

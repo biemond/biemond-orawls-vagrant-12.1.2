@@ -70,12 +70,37 @@ module Utils
       weblogicHomeDir     = domainValues['weblogic_home_dir']
       weblogicUser        = domainValues['weblogic_user']     || 'weblogic'
       weblogicConnectUrl  = domainValues['connect_url']       || 't3://localhost:7001'
-      weblogicPassword    = domainValues['weblogic_password'] || 'weblogic1'
-      postClasspath       = domainValues['post_classpath'] || ''
+      weblogicPassword    = domainValues['weblogic_password']
+      postClasspath       = domainValues['post_classpath']
+
+      fail('weblogic_home_dir cannot be nil, check the wls_setting resource type') if weblogicHomeDir.nil?
+      fail('weblogic_password cannot be nil, check the wls_setting resource type') if weblogicPassword.nil?
+
+      debugmode = Puppet::Util::Log.level
+      if debugmode.to_s == 'debug'
+        puts 'Prepare to run: ' + tmpFile.path + ',' +  operatingSystemUser + ',' +  domain + ',' +  weblogicHomeDir + ',' +  weblogicUser + ',' +  weblogicPassword + ',' +  weblogicConnectUrl + ',' +  postClasspath
+        puts 'vvv==================================================================='
+        File.open(tmpFile.path).readlines.each do |line|
+          puts line
+        end
+        puts '^^^===================================================================='
+      end
 
       wls_daemon = WlsDaemon.run(operatingSystemUser, domain, weblogicHomeDir, weblogicUser, weblogicPassword, weblogicConnectUrl, postClasspath)
-      wls_daemon.execute_script(tmpFile.path)
+      if timeout_specified
+        wls_daemon.execute_script(tmpFile.path, timeout_specified)
+      else
+        wls_daemon.execute_script(tmpFile.path)
+      end
       File.read('/tmp/' + script + '.out') if action == 'index'
+    end
+
+    def timeout_specified
+      if respond_to?(:to_hash)
+        to_hash.fetch(:timeout) { nil } #
+      else
+        nil
+      end
     end
   end
 end

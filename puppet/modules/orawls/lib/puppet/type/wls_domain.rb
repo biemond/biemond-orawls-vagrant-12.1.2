@@ -38,6 +38,7 @@ module Puppet
 
     parameter :domain
     parameter :name
+    parameter :timeout
     parameter :weblogic_domain_name
     property :jta_transaction_timeout
     property :jta_max_transactions
@@ -49,6 +50,9 @@ module Puppet
     property :log_filecount
     property :log_rotationtype
     property :log_rotate_logon_startup
+    property :jmx_platform_mbean_server_enabled
+    property :jmx_platform_mbean_server_used
+    property :web_app_container_show_archived_real_path_enabled
 
     add_title_attributes(:weblogic_domain_name) do
       /^((.*\/)?(.*)?)$/

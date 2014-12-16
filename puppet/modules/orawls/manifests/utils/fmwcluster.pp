@@ -36,7 +36,7 @@ define orawls::utils::fmwcluster (
   $log_output                 = false, # true|false
 )
 {
-  if ( $wls_domains_dir == undef ) {
+  if ( $wls_domains_dir == undef or $wls_domains_dir == '') {
     $domains_dir = "${middleware_home_dir}/user_projects/domains"
   } else {
     $domains_dir =  $wls_domains_dir
@@ -374,29 +374,6 @@ define orawls::utils::fmwcluster (
         download_dir        => $download_dir,
         log_output          => $log_output,
         require             => Exec[$last_step],
-      }
-
-      if ( $soa_enabled  == true ) {
-
-        file { "changeMachineOfAdminserver ${domain_name} ${title}":
-          ensure  => present,
-          path    => "${download_dir}/changeAdminServerNodemanager_${domain_name}.py",
-          content => template('orawls/wlst/wlstexec/fmw/changeAdminServerNodemanager.py.erb'),
-          replace => true,
-          backup  => false,
-          mode    => '0775',
-          owner   => $os_user,
-          group   => $os_group,
-        }
-        exec { "execwlst changeMachineOfAdminserver ${domain_name} ${title}":
-          command     => "${middleware_home_dir}/oracle_common/common/bin/wlst.sh ${download_dir}/changeAdminServerNodemanager_${domain_name}.py ${weblogic_password}",
-          environment => ["JAVA_HOME=${jdk_home_dir}"],
-          before      => Exec["execwlst changeWorkmanagers.py ${title}"],
-          require     => [File["changeMachineOfAdminserver ${domain_name} ${title}"],
-                          Orawls::Control["StartupAdminServerForSoa${title}"]],
-          timeout     => 0,
-          logoutput   => $log_output,
-        }
       }
 
       # the py script used by the wlst

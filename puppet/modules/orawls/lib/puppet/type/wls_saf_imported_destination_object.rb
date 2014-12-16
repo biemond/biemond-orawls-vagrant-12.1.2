@@ -43,6 +43,7 @@ module Puppet
     parameter :jmsmodule
     parameter :imported_destination
     parameter :object_name
+    parameter :timeout
     property :object_type
     property :timetolivedefault
     property :usetimetolivedefault
@@ -54,6 +55,11 @@ module Puppet
     add_title_attributes(:jmsmodule, :imported_destination, :object_name) do
       /^((.*\/)?(.*):(.*):(.*)?)$/
     end
+
+    #
+    # Make sure the top level jms module is auto required
+    #
+    autorequire(:wls_saf_imported_destination) { "#{jmsmodule}:#{imported_destination}" }
 
   end
 end

@@ -43,6 +43,7 @@ module Puppet
     parameter :jmsmodule
     parameter :foreign_server
     parameter :object_name
+    parameter :timeout
     property :object_type
     property :remotejndiname
     property :localjndiname
@@ -50,6 +51,11 @@ module Puppet
     add_title_attributes(:jmsmodule, :foreign_server, :object_name) do
       /^((.*\/)?(.*):(.*):(.*)?)$/
     end
+
+    #
+    # Make sure the top foreign server is auto required
+    #
+    autorequire(:wls_foreign_server) { "#{jmsmodule}:#{foreign_server}" }
 
   end
 end

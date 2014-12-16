@@ -45,8 +45,9 @@ module Puppet
     parameter :custom_identity_keystore_passphrase
     parameter :custom_identity_privatekey_passphrase
     parameter :trust_keystore_passphrase
+    parameter :timeout
 
-    property :custom_identity
+    property :tunnelingenabled
 
     property :trust_keystore_file
     property :custom_identity_keystore_filename
@@ -67,10 +68,19 @@ module Puppet
     property :log_rotationtype
     property :log_rotate_logon_startup
 
+    property :log_http_filename
+    property :log_http_format_type
+    property :log_http_format
+    property :log_datasource_filename
+
     property :sslhostnameverificationignored
     property :two_way_ssl
     property :client_certificate_enforced
     property :jsseenabled
+    property :default_file_store
+    property :max_message_size
+
+    property :custom_identity
 
     add_title_attributes(:server_name) do
       /^((.*\/)?(.*)?)$/

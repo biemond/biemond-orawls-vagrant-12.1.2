@@ -9,6 +9,12 @@ newproperty(:extraproperties, :array_matching => :all) do
     end
   end
 
+  def insync?(is)
+    if is.kind_of?(Array)
+      is.sort == should.sort
+    end
+  end
+
 end
 
 def extraproperties

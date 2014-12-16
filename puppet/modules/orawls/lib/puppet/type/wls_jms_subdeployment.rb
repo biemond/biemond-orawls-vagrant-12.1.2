@@ -41,12 +41,18 @@ module Puppet
     parameter :name
     parameter :subdeployment_name
     parameter :jmsmodule
+    parameter :timeout
     property :target
     property :targettype
 
     add_title_attributes(:jmsmodule, :subdeployment_name) do
       /^((.*\/)?(.*):(.*)?)$/
     end
+
+    #
+    # Make sure the top level jms module is auto required
+    #
+    autorequire(:wls_jms_module) { jmsmodule }
 
   end
 end

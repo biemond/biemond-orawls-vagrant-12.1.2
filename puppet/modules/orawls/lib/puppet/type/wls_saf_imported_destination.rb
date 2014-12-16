@@ -41,6 +41,7 @@ module Puppet
     parameter :name
     parameter :jmsmodule
     parameter :imported_destination_name
+    parameter :timeout
     property :errorhandling
     property :remotecontext
     property :jndiprefix
@@ -52,6 +53,11 @@ module Puppet
     add_title_attributes(:jmsmodule, :imported_destination_name) do
       /^((.*\/)?(.*):(.*)?)$/
     end
+
+    #
+    # Make sure the top level jms module is auto required
+    #
+    autorequire(:wls_jms_module) { jmsmodule }
 
   end
 end

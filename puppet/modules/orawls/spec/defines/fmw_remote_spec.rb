@@ -91,8 +91,8 @@ describe 'orawls::fmw', :type => :define do
     describe "install SOA Suite" do
       it { 
            should contain_exec("install soa soaPS6").with({
-             'command'      => '/install/soa/Disk1/install/linux64/runInstaller -silent -response /install/soaPS6_silent_soa.rsp -waitforcompletion -invPtrLoc /etc/oraInst.loc -ignoreSysPrereqs -jreLoc /usr/java/jdk1.7.0_45 -Djava.io.tmpdir=/tmp',
-             'environment'  => 'TMP=/tmp',
+             'command'      => "/bin/sh -c 'unset DISPLAY;/install/soa/Disk1/install/linux64/runInstaller -silent -response /install/soaPS6_silent_soa.rsp -waitforcompletion -invPtrLoc /etc/oraInst.loc -ignoreSysPrereqs -jreLoc /usr/java/jdk1.7.0_45 -Djava.io.tmpdir=/tmp'",
+             'environment'  => 'TEMP=/tmp',
            }).that_requires('File[/install/soaPS6_silent_soa.rsp]').that_requires('Orawls::Utils::Orainst[create oraInst for soa]').that_requires('Exec[extract file1]')     
          }  
     end
@@ -136,7 +136,6 @@ describe 'orawls::fmw', :type => :define do
       end
     end
 
-
     describe "for OSB response file" do
       it do 
         should contain_file("/install/osbPS6_silent_osb.rsp")
@@ -163,8 +162,8 @@ describe 'orawls::fmw', :type => :define do
     describe "install OSB" do
       it { 
            should contain_exec("install osb osbPS6").with({
-             'command'      => '/install/osb/Disk1/install/linux/runInstaller -silent -response /install/osbPS6_silent_osb.rsp -waitforcompletion -invPtrLoc /etc/oraInst.loc -ignoreSysPrereqs -jreLoc /usr/java/jdk1.7.0_45 -Djava.io.tmpdir=/tmp1',
-             'environment'  => 'TMP=/tmp1',
+             'command'      => "/bin/sh -c 'unset DISPLAY;/install/osb/Disk1/install/linux/runInstaller -silent -response /install/osbPS6_silent_osb.rsp -waitforcompletion -invPtrLoc /etc/oraInst.loc -ignoreSysPrereqs -jreLoc /usr/java/jdk1.7.0_45 -Djava.io.tmpdir=/tmp1'",
+             'environment'  => 'TEMP=/tmp1',
            }).that_requires('File[/install/osbPS6_silent_osb.rsp]').that_requires('Orawls::Utils::Orainst[create oraInst for osb]').that_requires('Exec[extract file1]')     
          }  
     end

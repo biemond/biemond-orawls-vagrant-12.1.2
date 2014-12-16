@@ -43,16 +43,21 @@ module Puppet
     parameter :jmsmodule
     parameter :foreign_server_name
     parameter :password
+    parameter :timeout
     property :subdeployment
     property :defaulttargeting
     property :extraproperties
-    property :extrapropertiesvalues
     property :initialcontextfactory
     property :connectionurl
 
     add_title_attributes(:jmsmodule, :foreign_server_name) do
       /^((.*\/)?(.*):(.*)?)$/
     end
+
+    #
+    # Make sure the top level jms module is auto required
+    #
+    autorequire(:wls_jms_module) { jmsmodule}
 
   end
 end

@@ -18,6 +18,7 @@ define orawls::domain (
   $adminserver_name                      = hiera('domain_adminserver'            , 'AdminServer'),
   $adminserver_address                   = hiera('domain_adminserver_address'    , undef),
   $adminserver_port                      = hiera('domain_adminserver_port'       , 7001),
+  $adminserver_listen_on_all_interfaces  = false,  # for docker etc
   $java_arguments                        = hiera('domain_java_arguments'         , {}),         # java_arguments = { "ADM" => "...", "OSB" => "...", "SOA" => "...", "BAM" => "..."}
   $nodemanager_address                   = undef,
   $nodemanager_port                      = hiera('domain_nodemanager_port'       , 5556),
@@ -43,17 +44,19 @@ define orawls::domain (
   $custom_identity_keystore_passphrase   = undef,
   $custom_identity_alias                 = undef,
   $custom_identity_privatekey_passphrase = undef,
+  $create_rcu                            = hiera('create_rcu', true),
 )
 {
-  if ( $wls_domains_dir == undef ) {
+  if ( $wls_domains_dir == undef or $wls_domains_dir == '' ) {
     $domains_dir = "${middleware_home_dir}/user_projects/domains"
   } else {
-    $domains_dir = $wls_domains_dir
+    $domains_dir =  $wls_domains_dir
   }
-  if ( $wls_apps_dir == undef ) {
+
+  if ( $wls_apps_dir == undef or $wls_apps_dir == '') {
     $apps_dir = "${middleware_home_dir}/user_projects/applications"
   } else {
-    $apps_dir = $wls_apps_dir
+    $apps_dir =  $wls_apps_dir
   }
 
   $domain_dir = "${domains_dir}/${domain_name}"
@@ -173,13 +176,15 @@ define orawls::domain (
 
     $templateUCM          = "${middleware_home_dir}/Oracle_WCC1/common/templates/applications/oracle.ucm.cs_template_11.1.1.jar"
 
+    $templateFile   = 'orawls/domains/domain.py.erb'
 
     if $domain_template == 'standard' {
-      $templateFile   = 'orawls/domains/domain.py.erb'
+      $extensionsTemplateFile = undef
       $wlstPath       = "${weblogic_home_dir}/common/bin"
 
     } elsif $domain_template == 'osb' {
-      $templateFile  = 'orawls/domains/domain_osb.py.erb'
+      $extensionsTemplateFile = 'orawls/domains/extensions/osb_template.py.erb'
+
       if ( $version == 1213 ) {
         $wlstPath      = "${middleware_home_dir}/osb/common/bin"
       } else {
@@ -187,7 +192,8 @@ define orawls::domain (
       }
 
     } elsif $domain_template == 'osb_soa' or $domain_template == 'osb_soa_bpm' {
-      $templateFile  = 'orawls/domains/domain_osb_soa_bpm.py.erb'
+      $extensionsTemplateFile = 'orawls/domains/extensions/soa_osb_template.py.erb'
+
       if ( $version == 1213 ) {
         $wlstPath      = "${middleware_home_dir}/soa/common/bin"
       } else {
@@ -200,7 +206,8 @@ define orawls::domain (
       }
 
     } elsif $domain_template == 'soa' or $domain_template == 'soa_bpm' {
-      $templateFile  = 'orawls/domains/domain_soa_bpm.py.erb'
+      $extensionsTemplateFile = 'orawls/domains/extensions/soa_template.py.erb'
+
       if ( $version == 1213 ) {
         $wlstPath      = "${middleware_home_dir}/soa/common/bin"
       } else {
@@ -213,27 +220,33 @@ define orawls::domain (
       }
 
     } elsif $domain_template == 'adf' {
-      $templateFile  = 'orawls/domains/domain_adf.py.erb'
+      $extensionsTemplateFile = 'orawls/domains/extensions/jrf_template.py.erb'
+
       $wlstPath      = "${middleware_home_dir}/oracle_common/common/bin"
 
     } elsif $domain_template == 'oim' {
-      $templateFile  = 'orawls/domains/domain_oim.py.erb'
+      $extensionsTemplateFile = 'orawls/domains/extensions/oim_oam_template.py.erb'
+
       $wlstPath      = "${middleware_home_dir}/Oracle_IDM1/common/bin"
 
     } elsif $domain_template == 'oud' {
-      $templateFile  = 'orawls/domains/domain_oud.py.erb'
+      $extensionsTemplateFile = 'orawls/domains/extensions/oud_template.py.erb'
+
       $wlstPath      = "${weblogic_home_dir}/common/bin"
 
     } elsif $domain_template == 'wc' {
-      $templateFile  = 'orawls/domains/domain_wc.py.erb'
+      $extensionsTemplateFile = 'orawls/domains/extensions/wc_template.py.erb'
+
       $wlstPath      = "${middleware_home_dir}/Oracle_WC1/common/bin"
 
     } elsif $domain_template == 'wc_wcc_bpm' {
-      $templateFile  = 'orawls/domains/domain_wc_wcc_bpm.py.erb'
+      $extensionsTemplateFile = 'orawls/domains/extensions/wc_wcc_template.py.erb'
+
       $wlstPath      = "${middleware_home_dir}/Oracle_WCC1/common/bin"
 
     } else {
-      $templateFile   = 'orawls/domains/domain.py.erb'
+      $extensionsTemplateFile = undef
+
       $wlstPath       = "${weblogic_home_dir}/common/bin"
     }
 
@@ -324,6 +337,21 @@ define orawls::domain (
       }
     }
 
+    if($extensionsTemplateFile) {
+      file { "domain_extension.py ${domain_name} ${title}":
+        ensure  => present,
+        path    => "${download_dir}/domain_extension_${domain_name}.py",
+        content => template($extensionsTemplateFile),
+        replace => true,
+        backup  => false,
+        mode    => '0775',
+        owner   => $os_user,
+        group   => $os_group,
+        require => File[$download_dir],
+        before  => File["domain.py ${domain_name} ${title}"],
+      }
+    }
+
     # the domain.py used by the wlst
     file { "domain.py ${domain_name} ${title}":
       ensure  => present,
@@ -394,26 +422,31 @@ define orawls::domain (
         fail('unkown domain_template for rcu with version 1212 or 1213')
       }
 
-      # only works for a 12c middleware home
-      # creates RCU for ADF
-      if ( $rcu_database_url == undefined or $repository_sys_password == undefined or $repository_password == undefined or $repository_prefix == undefined ){
-        fail('Not all RCU parameters are provided')
-      }
+      if ( $create_rcu == undef or $create_rcu == true)
+      {
 
-      orawls::utils::rcu{ "RCU_12c ${title}":
-        fmw_product                 => $rcu_domain_template,
-        oracle_fmw_product_home_dir => "${middleware_home_dir}/oracle_common",
-        jdk_home_dir                => $jdk_home_dir,
-        os_user                     => $os_user,
-        os_group                    => $os_group,
-        download_dir                => $download_dir,
-        rcu_action                  => 'create',
-        rcu_database_url            => $rcu_database_url,
-        rcu_sys_password            => $repository_sys_password,
-        rcu_prefix                  => $repository_prefix,
-        rcu_password                => $repository_password,
-        log_output                  => $log_output,
-        before                      => Exec["execwlst ${domain_name} ${title}"],
+        # only works for a 12c middleware home
+        # creates RCU for ADF
+        if ( $rcu_database_url == undefined or $repository_sys_password == undefined or $repository_password == undefined or $repository_prefix == undefined ){
+          fail('Not all RCU parameters are provided')
+        }
+
+        orawls::utils::rcu{ "RCU_12c ${title}":
+          fmw_product                 => $rcu_domain_template,
+          oracle_fmw_product_home_dir => "${middleware_home_dir}/oracle_common",
+          jdk_home_dir                => $jdk_home_dir,
+          os_user                     => $os_user,
+          os_group                    => $os_group,
+          download_dir                => $download_dir,
+          rcu_action                  => 'create',
+          rcu_jdbc_url                => $repository_database_url,
+          rcu_database_url            => $rcu_database_url,
+          rcu_sys_password            => $repository_sys_password,
+          rcu_prefix                  => $repository_prefix,
+          rcu_password                => $repository_password,
+          log_output                  => $log_output,
+          before                      => Exec["execwlst ${domain_name} ${title}"],
+        }
       }
     }
 
@@ -433,10 +466,25 @@ define orawls::domain (
       group       => $os_group,
     }
 
+    if($extensionsTemplateFile) {
+      exec { "execwlst ${domain_name} extension ${title}":
+        command     => "${wlstPath}/wlst.sh domain_extension_${domain_name}.py",
+        environment => ["JAVA_HOME=${jdk_home_dir}"],
+        cwd         => $download_dir,
+        timeout     => 0,
+        path        => $exec_path,
+        user        => $os_user,
+        group       => $os_group,
+        require     => [Exec["execwlst ${domain_name} ${title}"],
+                        File["domain_extension.py ${domain_name} ${title}"],],
+      }
+    }
+
     yaml_setting { "domain ${title}":
-      target =>  '/etc/wls_domains.yaml',
-      key    =>  "domains/${domain_name}",
-      value  =>  $domain_dir,
+      target  =>  '/etc/wls_domains.yaml',
+      key     =>  "domains/${domain_name}",
+      value   =>  $domain_dir,
+      require =>  Exec["execwlst ${domain_name} ${title}"],
     }
 
     if ($domain_template == 'oim') {
@@ -452,7 +500,9 @@ define orawls::domain (
 
       exec { "exec PSA OPSS store upgrade ${domain_name} ${title}":
         command => "${middleware_home_dir}/oracle_common/bin/psa -response ${download_dir}/${title}psa_opss_upgrade.rsp",
-        require => [Exec["execwlst ${domain_name} ${title}"],File["${download_dir}/${title}psa_opss_upgrade.rsp"],],
+        require => [Exec["execwlst ${domain_name} ${title}"],
+                    Exec["execwlst ${domain_name} extension ${title}"],
+                    File["${download_dir}/${title}psa_opss_upgrade.rsp"],],
         timeout => 0,
         cwd     => $download_dir, # Added since psa binary saves and changes to current dir
         path    => $exec_path,
@@ -463,7 +513,9 @@ define orawls::domain (
       exec { "execwlst create OPSS store ${domain_name} ${title}":
         command     => "${wlstPath}/wlst.sh ${middleware_home_dir}/Oracle_IDM1/common/tools/configureSecurityStore.py -d ${domain_dir} -m create -c IAM -p ${repository_password}",
         environment => ["JAVA_HOME=${jdk_home_dir}"],
-        require     => [Exec["execwlst ${domain_name} ${title}"],Exec["exec PSA OPSS store upgrade ${domain_name} ${title}"],],
+        require     => [Exec["execwlst ${domain_name} ${title}"],
+                        Exec["execwlst ${domain_name} extension ${title}"],
+                        Exec["exec PSA OPSS store upgrade ${domain_name} ${title}"],],
         timeout     => 0,
         path        => $exec_path,
         user        => $os_user,
@@ -474,6 +526,7 @@ define orawls::domain (
         command     => "${wlstPath}/wlst.sh ${middleware_home_dir}/Oracle_IDM1/common/tools/configureSecurityStore.py -d ${domain_dir} -m validate",
         environment => ["JAVA_HOME=${jdk_home_dir}"],
         require     => [Exec["execwlst ${domain_name} ${title}"],
+                        Exec["execwlst ${domain_name} extension ${title}"],
                         Exec["execwlst create OPSS store ${domain_name} ${title}"]],
         timeout     => 0,
         path        => $exec_path,
@@ -492,7 +545,8 @@ define orawls::domain (
         exec { "setDebugFlagOnFalse ${domain_name} ${title}":
           command => "sed -e's/debugFlag=\"true\"/debugFlag=\"false\"/g' ${domain_dir}/bin/setDomainEnv.sh > /tmp/domain.tmp && mv /tmp/domain.tmp ${domain_dir}/bin/setDomainEnv.sh",
           onlyif  => "/bin/grep debugFlag=\"true\" ${domain_dir}/bin/setDomainEnv.sh | /usr/bin/wc -l",
-          require => Exec["execwlst ${domain_name} ${title}"],
+          require => [Exec["execwlst ${domain_name} ${title}"],
+                      Exec["execwlst ${domain_name} extension ${title}"],],
           path    => $exec_path,
           user    => $os_user,
           group   => $os_group,
@@ -518,7 +572,8 @@ define orawls::domain (
         exec { "setDebugFlagOnFalse ${domain_name} ${title}":
           command => "sed -i -e's/debugFlag=\"true\"/debugFlag=\"false\"/g' ${domain_dir}/bin/setDomainEnv.sh",
           onlyif  => "/bin/grep debugFlag=\"true\" ${domain_dir}/bin/setDomainEnv.sh | /usr/bin/wc -l",
-          require => Exec["execwlst ${domain_name} ${title}"],
+          require => [Exec["execwlst ${domain_name} ${title}"],
+                      Exec["execwlst ${domain_name} extension ${title}"],],
           path    => $exec_path,
           user    => $os_user,
           group   => $os_group,
@@ -541,6 +596,16 @@ define orawls::domain (
       path    => $exec_path,
       user    => $os_user,
       group   => $os_group,
+    }
+
+    if($extensionsTemplateFile) {
+      exec { "domain.py ${domain_name} extension ${title}":
+        command => "rm ${download_dir}/domain_extension_${domain_name}.py",
+        require => Exec["execwlst ${domain_name} extension ${title}"],
+        path    => $exec_path,
+        user    => $os_user,
+        group   => $os_group,
+      }
     }
 
     $nodeMgrHome = "${domain_dir}/nodemanager"

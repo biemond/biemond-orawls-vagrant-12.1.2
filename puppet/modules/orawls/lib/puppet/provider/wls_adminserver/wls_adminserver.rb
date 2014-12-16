@@ -41,21 +41,28 @@ nmConnect(\"#{weblogic_user}\",\"#{weblogic_password}\",\"#{nodemanager_address}
 nmDisconnect()
 EOF"
 
-    Puppet.debug "adminserver action: #{action} with command #{command} and CONFIG_JVM_ARGS=#{config}"
+    command2 = "#{weblogic_home_dir}/common/bin/wlst.sh -skipWLSModuleScanning <<-EOF
+nmConnect(\"#{weblogic_user}\",\"xxxxx\",\"#{nodemanager_address}\",#{nodemanager_port},\"#{domain_name}\",\"#{domain_path}\",\"ssl\")
+#{wls_action}
+nmDisconnect()
+EOF"
+
+    Puppet.info "adminserver action: #{action} with command #{command2} and CONFIG_JVM_ARGS=#{config}"
 
     output = `su - #{user} -c 'export CONFIG_JVM_ARGS="#{config}";#{command}'`
-    Puppet.debug "adminserver result: #{output}"
+    Puppet.info "adminserver result: #{output}"
   end
 
   def adminserver_status
     domain_name    = resource[:domain_name]
     name           = resource[:server_name]
 
-    if :kernel == 'SunOS'
-      command  = "/usr/ucb/ps wwxa | grep -v grep | /bin/grep 'weblogic.Name=#{name}' | /bin/grep #{domain_name}"
-    else
-      command  = "/bin/ps -ef | grep -v grep | /bin/grep 'weblogic.Name=#{name}' | /bin/grep #{domain_name}"
-    end
+    kernel = Facter.value(:kernel)
+
+    ps_bin = (kernel != "SunOS" || (kernel == 'SunOS' && Facter.value(:kernelrelease) == '5.11')) ? "/bin/ps" : "/usr/ucb/ps"
+    ps_arg = kernel == "SunOS" ? "awwx" : "-ef"
+
+    command  = "#{ps_bin} #{ps_arg} | /bin/grep -v grep | /bin/grep 'weblogic.Name=#{name}' | /bin/grep #{domain_name}"
 
     Puppet.debug "adminserver_status #{command}"
     output = `#{command}`

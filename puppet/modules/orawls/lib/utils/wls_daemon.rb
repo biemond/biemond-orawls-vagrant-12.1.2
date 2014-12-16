@@ -1,4 +1,6 @@
 class WlsDaemon < EasyType::Daemon
+  DEFAULT_TIMEOUT = 120 # 2 minutes
+
   def self.run(user, domain, weblogicHomeDir, weblogicUser, weblogicPassword, weblogicConnectUrl, postClasspath)
     daemon = super("wls-#{domain}")
     if daemon
@@ -25,13 +27,13 @@ class WlsDaemon < EasyType::Daemon
     connect_to_wls
   end
 
-  def execute_script(script, debug = false)
-    Puppet.info "Executing wls-script #{script}"
+  def execute_script(script, timeout = DEFAULT_TIMEOUT)
+    Puppet.info "Executing wls-script #{script} with timeout = #{timeout}"
     pass_domain
     pass_credentials
     connect_to_wls
     execute_command "execfile('#{script}')"
-    sync
+    sync(timeout)
   end
 
   private
